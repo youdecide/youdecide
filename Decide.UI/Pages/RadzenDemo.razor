@@ -1,10 +1,10 @@
 ﻿@page "/radzendemo"
+@inject HttpClient Http
+@using System.Text.Json
 
 
 <h1>Radzen Demo</h1>
 
-
-<RadzenButton Text="@text"></RadzenButton>
 
 <RadzenCard Style="height: 500px">
     <RadzenMenu>
@@ -50,8 +50,85 @@
     </RadzenMenu>
 </RadzenCard>
 
+@if (dataTable == null)
+{
+    <p><em>Loading DataTable...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                @foreach (var column in dataTable.Columns)
+                {
+                    <th>@column.ToString()</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in dataTable.Rows)
+            {
+                <tr>
+                    <td>@row["Column A"].ToString()</td>
+                    <td>@row["Column B"].ToString()</td>
+                    <td>@row["Column C"].ToString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
-    string text = "Hi";
+
+    private System.Data.DataTable dataTable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+
+        HttpResponseMessage response = await Http.GetAsync("sample-data/car01.json");
+        response.EnsureSuccessStatusCode();
+        string responseBody = await response.Content.ReadAsStringAsync();
+
+        using (JsonDocument document = JsonDocument.Parse(responseBody))
+        {
+
+            JsonElement root = document.RootElement;
+
+            var properties = root.EnumerateObject().ToList();
+            var prop = properties[0];
+            Console.WriteLine($"Property Name: {prop.Name}");
+            Console.WriteLine("Number of properties " + properties.Count().ToString() );
+
+            var jsonObject = root.GetRawText();
+            Console.WriteLine(jsonObject.ToString());
+        }
+
+
+        this.InitalizeTable();
+    }
+
+    private void InitalizeTable()
+    {
+        this.dataTable = new System.Data.DataTable("CarTable");
+        dataTable.Columns.Add("Column A");
+        dataTable.Columns.Add("Column B");
+        dataTable.Columns.Add("Column C");
+
+        var row = dataTable.NewRow();
+        row["Column A"] = "Value A";
+        row["Column B"] = "Value B";
+        row["Column C"] = "Value C";
+
+        dataTable.Rows.Add(row);
+
+        row = dataTable.NewRow();
+        row["Column A"] = "Value A";
+        row["Column B"] = "Value B";
+        row["Column C"] = "Value C";
+
+        dataTable.Rows.Add(row);
+
+    }
 }
 
