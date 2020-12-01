@@ -48,35 +48,40 @@
             </RadzenMenuItem>
         </RadzenMenuItem>
     </RadzenMenu>
+
+    @if (dataTable == null)
+    {
+        <p><em>Loading DataTable...</em></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    @foreach (var column in dataTable.Columns)
+                    {
+                        <th>@column.ToString()</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in dataTable.Rows)
+                {
+                    <tr>
+                        @foreach (var column in dataTable.Columns)
+                        {
+                            <td>@row[column.ToString()].ToString()</td>
+                        }
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
 </RadzenCard>
 
-@if (dataTable == null)
-{
-    <p><em>Loading DataTable...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                @foreach (var column in dataTable.Columns)
-                {
-                    <th>@column.ToString()</th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (System.Data.DataRow row in dataTable.Rows)
-            {
-                <tr>
-                    <td>@row["Column A"].ToString()</td>
-                    <td>@row["Column B"].ToString()</td>
-                    <td>@row["Column C"].ToString()</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+
 
 @code {
 
@@ -84,7 +89,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        //forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
 
         HttpResponseMessage response = await Http.GetAsync("sample-data/car01.json");
         response.EnsureSuccessStatusCode();
@@ -92,43 +96,31 @@ else
 
         using (JsonDocument document = JsonDocument.Parse(responseBody))
         {
-
-            JsonElement root = document.RootElement;
-
-            var properties = root.EnumerateObject().ToList();
-            var prop = properties[0];
-            Console.WriteLine($"Property Name: {prop.Name}");
-            Console.WriteLine("Number of properties " + properties.Count().ToString() );
-
-            var jsonObject = root.GetRawText();
-            Console.WriteLine(jsonObject.ToString());
+            this.InitilizeTableFromJson(document);
         }
 
 
-        this.InitalizeTable();
     }
 
-    private void InitalizeTable()
+    private void InitilizeTableFromJson(JsonDocument document)
     {
         this.dataTable = new System.Data.DataTable("CarTable");
-        dataTable.Columns.Add("Column A");
-        dataTable.Columns.Add("Column B");
-        dataTable.Columns.Add("Column C");
+        JsonElement root = document.RootElement;
 
         var row = dataTable.NewRow();
-        row["Column A"] = "Value A";
-        row["Column B"] = "Value B";
-        row["Column C"] = "Value C";
+        foreach (var item in root.EnumerateObject().ToList())
+        {
+            dataTable.Columns.Add(item.Name);
+            row[item.Name] = item.Value;
+        }
 
         dataTable.Rows.Add(row);
 
-        row = dataTable.NewRow();
-        row["Column A"] = "Value A";
-        row["Column B"] = "Value B";
-        row["Column C"] = "Value C";
-
-        dataTable.Rows.Add(row);
+        var jsonObject = root.GetRawText();
+        Console.WriteLine(jsonObject.ToString());
 
     }
+
+
 }
 
